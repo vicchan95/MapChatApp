@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -28,6 +30,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,20 +38,26 @@ public class MainActivity extends AppCompatActivity {
     private final String getURL = "https://kamorris.com/lab/get_locations.php";
     private final String postURL = "https://kamorris.com/lab/register_location.php";
 
-    private final String username = "victor";
+    private String username = "victor";
 
     LocationManager locationManager;
     LocationListener locationListener;
     Location mlocation;
     RequestQueue queue;
+    ArrayList<Partners> partnersArrayList = new ArrayList();
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     int minTime = 0, minDistance = 10;
+
+    FragmentManager fm;
+    Fragment listFrag, mapFrag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        fm = getSupportFragmentManager();
 
         queue = Singleton.getInstance(this.getApplicationContext()).getRequestQueue();
 
@@ -76,17 +85,26 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        // Check to see if permission is granted and grab last known location for startup
         if (checkCallingOrSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) !=
                 PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         } else {
             // Permission already granted
             getLastKnownLocation();
+            postLocation();
         }
 
-        getPartners();
+        listFrag = fm.findFragmentById(R.id.listContainer);
+        // check if fragment is null (first startup)
+        if(listFrag == null){
+
+        }
+
+
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -98,16 +116,17 @@ public class MainActivity extends AppCompatActivity {
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
                     getLastKnownLocation();
+                    postLocation();
                 } else {
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                     Log.d("Permissions Result", "Permission denied");
                 }
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime,
+                        minDistance, locationListener);
                 return;
             }
 
-            // other 'case' lines to check for other
-            // permissions this app might request.
         }
     }
 
@@ -115,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
         StringRequest postRequest = new StringRequest(Request.Method.POST, postURL, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                Log.d("POST Reponse", response);
+                Log.d("POST Response", response);
             }
 
         }, new Response.ErrorListener() {
@@ -137,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
         queue.add(postRequest);
     }
 
-    private void getPartners() {
+    private void requestPartners() {
         JsonArrayRequest getRequest = new JsonArrayRequest(Request.Method.GET, getURL,
                 null, new Response.Listener<JSONArray>() {
 
@@ -168,7 +187,6 @@ public class MainActivity extends AppCompatActivity {
                             // Logic to handle location object
                             Log.d("getLastLocation Response", "Location is not null");
                             mlocation = location;
-                            postLocation();
                             // TODO: Add code to automatically report location update every 30 seconds
                         } else {
                             Log.d("getLastLocation Response", "Location is null");
@@ -178,7 +196,6 @@ public class MainActivity extends AppCompatActivity {
                             }
                             else{
                                 requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-                                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
                             }
                         }
                     }
