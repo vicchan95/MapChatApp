@@ -2,6 +2,7 @@ package edu.temple.mapchatapp;
 
 import android.content.Context;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -22,24 +23,24 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.MyViewHolder> 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
         // each data item is just a string in this case
         public TextView partnername;
-        public MyViewHolder(TextView v) {
-            super(v);
-            partnername = v;
+        public MyViewHolder(View itemView) {
+            super(itemView);
+            partnername = itemView.findViewById(R.id.textView);
         }
     }
 
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        TextView v = (TextView) LayoutInflater.from(parent.getContext()).inflate(
-                R.layout.fragment_list, parent, false);
+        View v = LayoutInflater.from(parent.getContext()).inflate(
+                R.layout.recycler_view_item, parent, false);
         MyViewHolder vh = new MyViewHolder(v);
         return vh;
     }
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position){
-        holder.partnername.setText(partnersList.get(position).toString());
+        holder.partnername.setText(partnersList.get(position).getUsername());
     }
 
     @Override

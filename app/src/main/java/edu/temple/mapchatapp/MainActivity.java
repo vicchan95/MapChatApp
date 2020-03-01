@@ -28,13 +28,15 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ListFragment.UserLocationInterface {
     private final String getURL = "https://kamorris.com/lab/get_locations.php";
     private final String postURL = "https://kamorris.com/lab/register_location.php";
 
@@ -92,15 +94,20 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // Permission already granted
             getLastKnownLocation();
-            postLocation();
         }
 
         listFrag = fm.findFragmentById(R.id.listContainer);
         // check if fragment is null (first startup)
         if(listFrag == null){
-
+            requestPartners();
         }
-
+        // Not startup, need to update listFrag
+        else{
+            fm.beginTransaction()
+                    .remove(listFrag)
+                    .add(R.id.listContainer, ListFragment.newInstance(partnersArrayList))
+                    .commitAllowingStateLoss();
+        }
 
     }
 
@@ -116,7 +123,6 @@ public class MainActivity extends AppCompatActivity {
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
                     getLastKnownLocation();
-                    postLocation();
                 } else {
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
@@ -163,6 +169,38 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(JSONArray response) {
                 Log.d("Get Response", response.toString());
+                Log.d("Location", mlocation.toString());
+                partnersArrayList.clear();
+                Partners partner;
+                for(int i = 0; i < response.length(); i++){
+                    try {
+                        JSONObject partnerObject = response.getJSONObject(i);
+                        float[] distance = new float[3];
+                        if(username == partnerObject.getString("username")){
+                            distance[0] = 0;
+                        }
+                        else {
+                            Location.distanceBetween(mlocation.getLatitude(), mlocation.getLongitude(),
+                                    Double.valueOf(partnerObject.getString("latitude")),
+                                    Double.valueOf(partnerObject.getString("longitude")), distance);
+                        }
+                        partner = new Partners(partnerObject.getString("username"),
+                                Double.valueOf(partnerObject.getString("latitude")),
+                                Double.valueOf(partnerObject.getString("longitude")),
+                                (double) distance[0]);
+                        Log.d("Partner object", "Name: "+partner.getUsername()+
+                                " distance: " + Double.toString(partner.getDistToUser()));
+                        partnersArrayList.add(partner);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Collections.sort(partnersArrayList);
+                Log.d("Sorted Array List", partnersArrayList.toString());
+                listFrag = ListFragment.newInstance(partnersArrayList);
+                fm.beginTransaction()
+                        .add(R.id.listContainer, listFrag)
+                        .commitAllowingStateLoss();
             }
         }, new Response.ErrorListener() {
 
@@ -187,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
                             // Logic to handle location object
                             Log.d("getLastLocation Response", "Location is not null");
                             mlocation = location;
+                            postLocation();
                             // TODO: Add code to automatically report location update every 30 seconds
                         } else {
                             Log.d("getLastLocation Response", "Location is null");
@@ -202,4 +241,13 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void getUserLocation(ArrayList<Partners> list) {
+        // TODO: finish writing method.
+    }
 }
