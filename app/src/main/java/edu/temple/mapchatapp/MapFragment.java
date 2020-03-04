@@ -1,7 +1,5 @@
 package edu.temple.mapchatapp;
 
-import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -16,7 +14,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
@@ -76,6 +73,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         else{
             Log.d("onMapReady parameter", "parameter passed in is null");
+        }
+    }
+
+    public void updateMarkers(ArrayList<Partners> partnersList){
+        if(gMap != null){
+            gMap.clear();
+            for(int i = 0; i<partnersList.size(); i++){
+                Partners partner = partnersList.get(i);
+                gMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(partner.getLatitude(), partner.getLongitude()))
+                        .title(partner.getUsername()));
+            }
         }
     }
 

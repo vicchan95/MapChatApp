@@ -2,8 +2,6 @@ package edu.temple.mapchatapp;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
@@ -41,7 +39,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements ListFragment.UserLocationInterface {
+public class MainActivity extends AppCompatActivity implements ListFragment.PartnersLocationInterface {
     private final String getURL = "https://kamorris.com/lab/get_locations.php";
     private final String postURL = "https://kamorris.com/lab/register_location.php";
 
@@ -106,7 +104,7 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
             @Override
             public void onClick(View v) {
                 String newUsername = ((EditText)findViewById(R.id.nameBox)).getText().toString();
-                if(!newUsername.isEmpty() && newUsername != null){
+                if(newUsername != null && !newUsername.isEmpty()){
                     setUsername(newUsername);
 //                    postLocation();
                     Log.d("username changed", username);
@@ -117,40 +115,6 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
                 }
             }
         });
-
-        listFrag = fm.findFragmentById(R.id.listContainer);
-        // check if fragment is null (first startup)
-        if(listFrag == null){
-            requestPartners();
-            Log.d("partnersList after method call", partnersArrayList.toString());
-        }
-        // Not startup, need to update listFrag
-        else{
-            // TODO: Finish writing getPartners() to replace requestPartners()
-            //  to get partners from previous state by putting update listFrag in separate method.
-            requestPartners();
-            fm.beginTransaction()
-                    .remove(listFrag)
-                    .add(R.id.listContainer, ListFragment.newInstance(partnersArrayList))
-                    .commitAllowingStateLoss();
-        }
-
-        mapFrag = fm.findFragmentById(R.id.mapContainer);
-        // Startup
-        if(mapFrag == null){
-            Log.d("before new instance partnersArrayList", partnersArrayList.toString());
-            mapFrag = MapFragment.newInstance(partnersArrayList);
-            fm.beginTransaction()
-                    .add(R.id.mapContainer, mapFrag)
-                    .commitAllowingStateLoss();
-        }
-        // Not startup, replace mapfrag
-        else{
-            // TODO: add method for updating
-            fm.beginTransaction()
-                    .replace(R.id.mapContainer, MapFragment.newInstance(partnersArrayList))
-                    .commitAllowingStateLoss();
-        }
     }
 
     @SuppressLint("MissingPermission")
@@ -172,7 +136,6 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
                     // functionality that depends on this permission.
                     Log.d("Permissions Result", "Permission denied");
                 }
-                return;
             }
 
         }
@@ -204,6 +167,42 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
         queue.add(postRequest);
     }
 
+    private void listDisplay(ArrayList<Partners> partnersList){
+        listFrag = fm.findFragmentById(R.id.listContainer);
+        // check if fragment is null (first startup)
+        if(listFrag == null){
+            Log.d("startup list partnersArrayList", partnersList.toString());
+            listFrag = ListFragment.newInstance(partnersList);
+            fm.beginTransaction()
+                    .add(R.id.listContainer, listFrag)
+                    .commitAllowingStateLoss();
+        }
+        else{
+            Log.d("non-startup list partnersArrayList", partnersList.toString());
+            fm.beginTransaction()
+                    .replace(R.id.listContainer, ListFragment.newInstance(partnersList))
+                    .commitAllowingStateLoss();
+        }
+    }
+
+    @Override
+    public void getPartnersLocation(ArrayList<Partners> list) {
+        mapFrag = fm.findFragmentById(R.id.mapContainer);
+        // Startup
+        if(mapFrag == null){
+            Log.d("startup map partnersArrayList", list.toString());
+            mapFrag = MapFragment.newInstance(partnersArrayList);
+            fm.beginTransaction()
+                    .add(R.id.mapContainer, mapFrag)
+                    .commitAllowingStateLoss();
+        }
+        // Update display
+        else{
+            Log.d("non-startup map partnersArrayList", list.toString());
+            ((MapFragment) mapFrag).updateMarkers(list);
+        }
+    }
+
     public class requestPartners extends TimerTask
     {
         @Override
@@ -221,7 +220,7 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
                         try {
                             JSONObject partnerObject = response.getJSONObject(i);
                             float[] distance = new float[3];
-                            if(username == partnerObject.getString("username")){
+                            if(username.equals(partnerObject.getString("username"))){
                                 distance[0] = 0;
                             }
                             else {
@@ -240,16 +239,16 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
                             e.printStackTrace();
                         }
                     }
+                    //Organizing arraylist and checking sort worked
                     Collections.sort(partnersArrayList);
-                    // TODO: remove first value which is user
                     Log.d("Sorted Array List", "----------------");
                     for(Partners p : partnersArrayList){
                         Log.d("Partner Object: ", p.getUsername());
                     }
-                    listFrag = ListFragment.newInstance(partnersArrayList);
-                    fm.beginTransaction()
-                            .add(R.id.listContainer, listFrag)
-                            .commitAllowingStateLoss();
+                    //Removing self from arraylist
+                    partnersArrayList.remove(0);
+
+                    listDisplay(partnersArrayList);
                 }
             }, new Response.ErrorListener() {
 
@@ -300,10 +299,6 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
                 minTime, minDistance, locationListener);
     }
 
-    private void fragmentDisplay(public ArrayList()){
-
-    }
-
     private void setUsername(String username){
         this.username = username;
     }
@@ -317,10 +312,5 @@ public class MainActivity extends AppCompatActivity implements ListFragment.User
     protected void onDestroy() {
         super.onDestroy();
         locationManager.removeUpdates(locationListener);
-    }
-
-    @Override
-    public void getUserLocation(ArrayList<Partners> list) {
-        // TODO: finish writing method.
     }
 }

@@ -1,10 +1,8 @@
 package edu.temple.mapchatapp;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 
-import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,7 +21,7 @@ public class ListFragment extends Fragment {
     private static final String LIST_KEY = "partnerList";
     private ArrayList<Partners> partnerList;
 
-    private UserLocationInterface parentActivity;
+    private PartnersLocationInterface parentActivity;
 
     public ListFragment() {}
 
@@ -57,14 +55,16 @@ public class ListFragment extends Fragment {
         mAdapter = new ListAdapter((Context) parentActivity, partnerList);
         recyclerView.setAdapter(mAdapter);
 
+        parentActivity.getPartnersLocation(partnerList);
+
         return view;
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof UserLocationInterface) {
-            parentActivity = (UserLocationInterface) context;
+        if (context instanceof PartnersLocationInterface) {
+            parentActivity = (PartnersLocationInterface) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -77,11 +77,7 @@ public class ListFragment extends Fragment {
         parentActivity = null;
     }
 
-    public ArrayList<Partners> getPartners(){
-        return partnerList;
-    }
-
-    public interface UserLocationInterface {
-        void getUserLocation(ArrayList<Partners> list);
+    public interface PartnersLocationInterface {
+        void getPartnersLocation(ArrayList<Partners> list);
     }
 }
